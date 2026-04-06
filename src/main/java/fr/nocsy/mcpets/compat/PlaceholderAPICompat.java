@@ -78,10 +78,7 @@ public class PlaceholderAPICompat extends PlaceholderExpansion {
                     return "Resistance modifier not found: Pet is not a living pet.";
             case "PET_LEVEL_EXP_REQUIRED":
                 if (pet.getPetStats() != null)
-                    return String.valueOf(Math.round(
-                            pet.getPetStats().getNextLevel().getExpThreshold()
-                                    - pet.getPetStats().getCurrentLevel().getExpThreshold()
-                    ));
+                    return String.valueOf(Math.round(pet.getPetStats().getNextLevel().getExpThreshold()));
                 else
                     return "Max exp not found: Pet is not a living pet.";
             default:
