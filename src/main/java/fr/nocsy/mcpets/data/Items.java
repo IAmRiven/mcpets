@@ -4,6 +4,8 @@ import fr.nocsy.mcpets.data.config.FormatArg;
 import fr.nocsy.mcpets.data.config.GlobalConfig;
 import fr.nocsy.mcpets.data.config.ItemsListConfig;
 import fr.nocsy.mcpets.data.config.Language;
+import fr.nocsy.mcpets.data.livingpets.PetLevel;
+import fr.nocsy.mcpets.data.livingpets.PetStats;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.Material;
@@ -13,6 +15,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 
 public enum Items {
 
@@ -24,6 +27,7 @@ public enum Items {
     MOUNTMENU("mountmenu"),
     INVENTORY("inventory"),
     SKINS("skins"),
+    NEXT_LEVEL_STATS("next_level_stats"),
     EQUIPMENT("equipment"),
     PAGE_SELECTOR("page_selector");
 
@@ -60,6 +64,9 @@ public enum Items {
                 break;
             case "skins":
                 item = skins();
+                break;
+            case "next_level_stats":
+                item = nextLevelStatsDefault();
                 break;
             case "equipment":
                 item = equipment();
@@ -191,6 +198,16 @@ public enum Items {
         return it;
     }
 
+    private static ItemStack nextLevelStatsDefault() {
+        ItemStack it = new ItemStack(Material.EXPERIENCE_BOTTLE);
+        ItemMeta meta = it.getItemMeta();
+        meta.setDisplayName(Language.NEXT_LEVEL_ITEM_NAME.getMessage());
+        meta.setItemName("AlmPet;NextLevelStats");
+
+        it.setItemMeta(meta);
+        return it;
+    }
+
     public static ItemStack page(int index, Player p) {
         ItemStack it = ItemsListConfig.getInstance().getItemStack("page_selector");
         ItemMeta meta = it.getItemMeta();
@@ -247,6 +264,64 @@ public enum Items {
         meta.setItemName(null);
         it.setItemMeta(meta);
         return it;
+    }
+
+    public static ItemStack nextLevelStats(Pet pet) {
+        ItemStack it = NEXT_LEVEL_STATS.getItem().clone();
+        ItemMeta meta = it.getItemMeta();
+        meta.setDisplayName(Language.NEXT_LEVEL_ITEM_NAME.getMessage());
+        meta.setItemName(NEXT_LEVEL_STATS.getLocalizedName());
+
+        if (pet == null || pet.getPetStats() == null) {
+            ArrayList<String> lore = new ArrayList<>(Arrays.asList(Language.NEXT_LEVEL_ITEM_MAX_LEVEL.getMessage().split("\\n")));
+            meta.setLore(lore);
+            it.setItemMeta(meta);
+            return it;
+        }
+
+        final PetStats stats = pet.getPetStats();
+        final PetLevel currentLevel = stats.getCurrentLevel();
+        final PetLevel nextLevel = stats.getNextLevel();
+
+        if (currentLevel == null || nextLevel == null || nextLevel.equals(currentLevel)) {
+            ArrayList<String> lore = new ArrayList<>(Arrays.asList(Language.NEXT_LEVEL_ITEM_MAX_LEVEL.getMessage().split("\\n")));
+            meta.setLore(lore);
+            it.setItemMeta(meta);
+            return it;
+        }
+
+        final String skill = nextLevel.getMythicSkill() == null || nextLevel.getMythicSkill().isEmpty()
+                ? Language.NEXT_LEVEL_ITEM_NO_SKILL.getMessage()
+                : nextLevel.getMythicSkill();
+
+        final String formattedLore = Language.NEXT_LEVEL_ITEM_DESCRIPTION.getMessageFormatted(
+                new FormatArg("%currentlevel%", currentLevel.getLevelName()),
+                new FormatArg("%nextlevel%", nextLevel.getLevelName()),
+                new FormatArg("%healthfrom%", fmt(currentLevel.getMaxHealth())),
+                new FormatArg("%healthto%", fmt(nextLevel.getMaxHealth())),
+                new FormatArg("%powerfrom%", fmt(currentLevel.getFlatPower())),
+                new FormatArg("%powerto%", fmt(nextLevel.getFlatPower())),
+                new FormatArg("%damagefrom%", fmt(currentLevel.getFlatDamageModifier())),
+                new FormatArg("%damageto%", fmt(nextLevel.getFlatDamageModifier())),
+                new FormatArg("%resistancefrom%", fmt(currentLevel.getFlatResistanceModifier())),
+                new FormatArg("%resistanceto%", fmt(nextLevel.getFlatResistanceModifier())),
+                new FormatArg("%regenfrom%", fmt(currentLevel.getRegeneration())),
+                new FormatArg("%regento%", fmt(nextLevel.getRegeneration())),
+                new FormatArg("%skill%", skill)
+        );
+
+        ArrayList<String> lore = new ArrayList<>(Arrays.asList(formattedLore.split("\\n")));
+        meta.setLore(lore);
+        it.setItemMeta(meta);
+        return it;
+    }
+
+    private static String fmt(final double value) {
+        final long rounded = Math.round(value);
+        if (Math.abs(value - rounded) < 0.0000001D)
+            return Long.toString(rounded);
+
+        return String.format(Locale.US, "%.2f", value);
     }
 
     public static ItemStack deco(Material mat) {

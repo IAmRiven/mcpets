@@ -29,6 +29,18 @@ public enum Language {
     SKINS_ITEM_NAME("§6Skins"),
     SKINS_ITEM_DESCRIPTION("§7Click to change your pet's skin"),
 
+    NEXT_LEVEL_ITEM_NAME("§6Next level preview"),
+    NEXT_LEVEL_ITEM_DESCRIPTION("§7Level up: §f%currentlevel% §7-> §f%nextlevel%" +
+        "\n§7Health: §c%healthfrom% §7> §c%healthto%" +
+        "\n§7Power: §d%powerfrom% §7> §d%powerto%" +
+        "\n§7Damage: §6%damagefrom% §7> §6%damageto%" +
+        "\n§7Resistance: §b%resistancefrom% §7> §b%resistanceto%" +
+        "\n§7Regeneration: §a%regenfrom% §7> §a%regento%" +
+        "\n " +
+        "\n§eUnlocked skill: §f%skill%"),
+    NEXT_LEVEL_ITEM_MAX_LEVEL("§7Your pet already reached maximum level."),
+    NEXT_LEVEL_ITEM_NO_SKILL("None"),
+
     EQUIPMENT_ITEM_NAME("§6Equipment"),
     EQUIPMENT_DESCRIPTION("§7Click to open your pet's equipment"),
 
