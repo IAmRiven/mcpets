@@ -436,7 +436,7 @@ public class PetStats {
             PlayerData.saveDB();
         }
         else {
-            petStatsList.forEach(PetStats::save);
+            new ArrayList<>(petStatsList).forEach(PetStats::save);
         }
     }
 
@@ -459,7 +459,7 @@ public class PetStats {
             }, delay, delay);
         }
         else {
-            Bukkit.getScheduler().scheduleSyncRepeatingTask(MCPets.getInstance(), () -> petStatsList.forEach(PetStats::save), delay, delay);
+            Bukkit.getScheduler().scheduleSyncRepeatingTask(MCPets.getInstance(), () -> new ArrayList<>(petStatsList).forEach(PetStats::save), delay, delay);
         }
     }
 
