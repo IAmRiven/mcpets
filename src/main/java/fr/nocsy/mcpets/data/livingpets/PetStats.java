@@ -289,8 +289,7 @@ public class PetStats {
                 if (experience == nextLevel.getExpThreshold()-1 + event.getExperience()) {
                     experience = nextLevel.getExpThreshold() - 1;
                     return false;
-                }
-                else {
+                } else {
                     experience = nextLevel.getExpThreshold()-1;
                     break;
                 }
@@ -299,9 +298,12 @@ public class PetStats {
             // note that's there's been a levelup
             levelUp = true;
             // Play the level up skills, animations, etc... (before updating currentLevel so oldLevel is available)
+            double oldThreshold = currentLevel.getExpThreshold();
             nextLevel.levelUp(pet.getOwner(), currentLevel);
             // Set the current level to the next one
             currentLevel = nextLevel;
+            // Restar el umbral del nivel anterior para reiniciar la barra de experiencia
+            experience = 0;
             // Move on the loop
             nextLevel = getNextLevel();
         }

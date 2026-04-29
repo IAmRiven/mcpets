@@ -1544,7 +1544,7 @@ public class Pet {
                     new FormatArg("%regeneration%", Double.toString(petStats.getCurrentLevel().getRegeneration())),
                     new FormatArg("%damagemodifier%", signSymbol_damageModifer + (int) (100 * (petStats.getDamageModifier() - 1))),
                     new FormatArg("%resistancemodifier%", signSymbol_resistanceModifer + (int) (100 * (petStats.getResistanceModifier() - 1))),
-                    new FormatArg("%power%", signSymbol_power + (int) (100 * (petStats.getPower() - 1))),
+                    new FormatArg("%power%", Integer.toString((int) petStats.getPower())),
                     new FormatArg("%experience%", Integer.toString((int) petStats.getExperience())),
                     new FormatArg("%threshold%", Integer.toString((int) petStats.getNextLevel().getExpThreshold())),
                     new FormatArg("%progressbar%", progressBar.toString()));
