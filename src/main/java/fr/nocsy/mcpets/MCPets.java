@@ -156,16 +156,28 @@ public class MCPets extends JavaPlugin {
 
         // Register the placeholders
         componentRegistry = new CustomComponentRegistry(instance, Lists.newArrayList());
-        componentRegistry.registerCustomComponent(CustomComponentRegistry.MythicComponentType.PLACEHOLDER, PLACEHOLDER_PACKAGE)
-                .registerCustomComponent(CustomComponentRegistry.MythicComponentType.CONDITION, CONDITION_PACKAGE)
-                .registerCustomComponent(CustomComponentRegistry.MythicComponentType.TARGETER, TARGETER_PACKAGE)
-                .registerCustomComponent(CustomComponentRegistry.MythicComponentType.MECHANIC, MECHANIC_PACKAGE);
+        registerMythicComponents();
 
         getLog().info("-=-=-=-= MCPets loaded =-=-=-=-");
         getLog().info("      Plugin made by Nocsy     ");
         getLog().info("-=-=-=-= -=-=-=-=-=-=- =-=-=-=-");
 
         FlagsManager.launchFlags();
+    }
+
+    public static void registerMythicComponents() {
+        registerCustomComponent("PLACEHOLDER", PLACEHOLDER_PACKAGE);
+        registerCustomComponent("CONDITION", CONDITION_PACKAGE);
+        registerCustomComponent("TARGETER", TARGETER_PACKAGE);
+        registerCustomComponent("MECHANIC", MECHANIC_PACKAGE);
+    }
+
+    private static void registerCustomComponent(final String typeName, final String packageName) {
+        try {
+            componentRegistry.registerCustomComponent(CustomComponentRegistry.MythicComponentType.valueOf(typeName), packageName);
+        } catch (final IllegalArgumentException ex) {
+            getLog().warning("MythicMobs component type '" + typeName + "' is not available in this MythicMobs version. Package skipped: " + packageName);
+        }
     }
 
     @Override
