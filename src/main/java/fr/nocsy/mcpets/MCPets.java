@@ -1,9 +1,11 @@
 package fr.nocsy.mcpets;
 
+import com.google.common.collect.Lists;
 import com.sk89q.worldguard.WorldGuard;
 import fr.nocsy.mcpets.commands.CommandHandler;
 import fr.nocsy.mcpets.compat.PlaceholderAPICompat;
 import fr.nocsy.mcpets.data.Pet;
+import fr.nocsy.mcpets.data.PetSkin;
 import fr.nocsy.mcpets.data.config.AbstractConfig;
 import fr.nocsy.mcpets.data.config.BlacklistConfig;
 import fr.nocsy.mcpets.data.config.CategoryConfig;
@@ -22,9 +24,9 @@ import fr.nocsy.mcpets.listeners.EventListener;
 import fr.nocsy.mcpets.modeler.AbstractModeler;
 import fr.nocsy.mcpets.modeler.BetterModelModeler;
 import fr.nocsy.mcpets.modeler.ModelEngineModeler;
-import fr.nocsy.mcpets.mythicmobs.placeholders.PetPlaceholdersManager;
 import fr.nocsy.mcpets.velocity.VelocitySyncManager;
 import io.lumine.mythic.bukkit.MythicBukkit;
+import io.lumine.mythic.core.skills.CustomComponentRegistry;
 import lombok.Getter;
 import net.luckperms.api.LuckPerms;
 import org.bukkit.Bukkit;
@@ -32,11 +34,15 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import static fr.nocsy.mcpets.mythicmobs.MythicListener.*;
 
 public class MCPets extends JavaPlugin {
 
@@ -49,6 +55,9 @@ public class MCPets extends JavaPlugin {
     private static boolean luckPermsNotFound = false;
     private static boolean nexoFound = false;
     private static boolean nexoChecked = false;
+
+    @Getter
+    private static CustomComponentRegistry componentRegistry;
 
     @Getter
     private static AbstractModeler modeler;
@@ -67,11 +76,33 @@ public class MCPets extends JavaPlugin {
         BlacklistConfig.getInstance().init();
         PetConfig.loadPets(AbstractConfig.getPath() + "Pets/", true);
         CategoryConfig.load(AbstractConfig.getPath() + "Categories/", true);
-        Databases.init();
-        PlayerData.initAll();
+
+        // Run DB initialization asynchronously to avoid freezing the main thread.
+        // Tasks that depend on isDatabaseSupport() being correctly set (autosave scheduler,
+        // Velocity init) must run AFTER this completes — see scheduleDbDependentTasks().
+        Bukkit.getScheduler().runTaskAsynchronously(instance, () -> {
+            Databases.init();
+            PlayerData.initAll();
+            // Hop back to main thread for tasks that must schedule on the main scheduler
+            Bukkit.getScheduler().runTask(instance, MCPets::scheduleDbDependentTasks);
+        });
 
         for (final EditorItems item : EditorItems.values())
             item.refreshData();
+    }
+
+    /**
+     * Tasks that depend on the DB connection state being known (isDatabaseSupport()).
+     * Called from the async DB init path so that PetStats.saveStats() picks the correct
+     * sync/async branch — otherwise a sync YAML autosave gets scheduled while DB init is
+     * still pending, then runs heavy MySQL writes on the main thread once DB connects.
+     */
+    private static void scheduleDbDependentTasks() {
+        PetStats.saveStats();
+        if (GlobalConfig.getInstance().isVelocityEnabled()) {
+            VelocitySyncManager.init();
+            getLog().info("[MCPets] : Velocity sync enabled.");
+        }
     }
 
     @Override
@@ -98,7 +129,11 @@ public class MCPets extends JavaPlugin {
         checkWorldGuard();
         checkLuckPerms();
         checkPlaceholderApi();
+        checkNexo();
         checkItemsAdder();
+        if (!nexoFound && !itemsAdderFound) {
+            getLog().info("Neither Nexo nor ItemsAdder were found. Custom items features won't be available.");
+        }
 
         try {
             if (GlobalConfig.getInstance().isWorldguardsupport()) {
@@ -116,15 +151,15 @@ public class MCPets extends JavaPlugin {
         modeler.registerListeners(this);
 
         loadConfigs();
-        PetStats.saveStats();
-
-        if (GlobalConfig.getInstance().isVelocityEnabled()) {
-            VelocitySyncManager.init();
-            getLog().info("[MCPets] : Velocity sync enabled.");
-        }
+        // PetStats.saveStats() and VelocitySyncManager.init() are scheduled inside
+        // loadConfigs() once async DB init completes — see scheduleDbDependentTasks()
 
         // Register the placeholders
-        PetPlaceholdersManager.registerPlaceholders();
+        componentRegistry = new CustomComponentRegistry(instance, Lists.newArrayList());
+        componentRegistry.registerCustomComponent(CustomComponentRegistry.MythicComponentType.PLACEHOLDER, PLACEHOLDER_PACKAGE)
+                .registerCustomComponent(CustomComponentRegistry.MythicComponentType.CONDITION, CONDITION_PACKAGE)
+                .registerCustomComponent(CustomComponentRegistry.MythicComponentType.TARGETER, TARGETER_PACKAGE)
+                .registerCustomComponent(CustomComponentRegistry.MythicComponentType.MECHANIC, MECHANIC_PACKAGE);
 
         getLog().info("-=-=-=-= MCPets loaded =-=-=-=-");
         getLog().info("      Plugin made by Nocsy     ");
@@ -147,31 +182,48 @@ public class MCPets extends JavaPlugin {
             modeler.unregisterListeners();
         }
 
-        PetStats.saveAll();
+        // Run all DB saves on a separate thread to avoid freezing the main thread
+        final CompletableFuture<Void> saveFuture = CompletableFuture.runAsync(() -> {
+            PetStats.saveAll();
 
-        // Save all active pets to DB before clearing them so that a server restart
-        // does not wipe the mcpets_active_pet records — players rejoin with their pet intact.
-        if (GlobalConfig.getInstance().isVelocityEnabled()
-                && GlobalConfig.getInstance().isDatabaseSupport()) {
-            for (Map.Entry<UUID, List<Pet>> entry : Pet.getActivePets().entrySet()) {
-                List<Pet> activePets = entry.getValue();
-                if (activePets != null && !activePets.isEmpty()) {
-                    List<String> ids = new ArrayList<>();
-                    for (Pet pet : activePets) {
-                        if (pet != null) ids.add(pet.getId());
-                    }
-                    if (!ids.isEmpty()) {
-                        Databases.saveActivePet(entry.getKey(), ids);
+            // Save all active pets to DB before clearing them so that a server restart
+            // does not wipe the mcpets_active_pet records — players rejoin with their pet intact.
+            if (GlobalConfig.getInstance().isVelocityEnabled()
+                    && GlobalConfig.getInstance().isDatabaseSupport()) {
+                for (Map.Entry<UUID, List<Pet>> entry : Pet.getActivePets().entrySet()) {
+                    List<Pet> activePets = entry.getValue();
+                    if (activePets != null && !activePets.isEmpty()) {
+                        List<String> ids = new ArrayList<>();
+                        Map<String, String> skinIds = new HashMap<>();
+                        for (Pet pet : activePets) {
+                            if (pet != null) {
+                                ids.add(pet.getId());
+                                final PetSkin skin = pet.getActiveSkin();
+                                if (skin != null) {
+                                    skinIds.put(pet.getId(), skin.getPathId());
+                                }
+                            }
+                        }
+                        if (!ids.isEmpty()) {
+                            Databases.saveActivePet(entry.getKey(), ids, skinIds);
+                        }
                     }
                 }
             }
+        });
+
+        FlagsManager.stopFlags();
+        VelocitySyncManager.shutdown();
+
+        // Wait for DB saves to complete before cleaning up
+        try {
+            saveFuture.join();
+        } catch (final Exception e) {
+            getLog().log(Level.SEVERE, "Error saving data on disable", e);
         }
 
         Pet.clearPets();
-        PlayerData.saveDB();
-        FlagsManager.stopFlags();
         Databases.closeConnection();
-        VelocitySyncManager.shutdown();
     }
 
     /**
@@ -203,9 +255,6 @@ public class MCPets extends JavaPlugin {
             }
         } catch (final ClassNotFoundException e) {
             nexoFound = false;
-            if (!nexoChecked) {
-                getLog().warning("Nexo could not be found. Nexo Custom items features won't be available.");
-            }
         } catch (final Exception e) {
             // Handle cases like zip file closed during plugin reload
             nexoFound = false;
@@ -226,7 +275,6 @@ public class MCPets extends JavaPlugin {
             itemsAdderFound = true;
         } catch (final ClassNotFoundException e) {
             itemsAdderFound = false;
-            getLog().warning("ItemsAdder could not be found. IA Custom items features won't be available.");
         }
     }
 

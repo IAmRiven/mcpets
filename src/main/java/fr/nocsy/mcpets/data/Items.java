@@ -1,21 +1,28 @@
 package fr.nocsy.mcpets.data;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+
 import fr.nocsy.mcpets.data.config.FormatArg;
 import fr.nocsy.mcpets.data.config.GlobalConfig;
 import fr.nocsy.mcpets.data.config.ItemsListConfig;
 import fr.nocsy.mcpets.data.config.Language;
 import fr.nocsy.mcpets.data.livingpets.PetLevel;
 import fr.nocsy.mcpets.data.livingpets.PetStats;
+import fr.nocsy.mcpets.utils.PDCTag;
+import fr.nocsy.mcpets.utils.Utils;
 import lombok.Getter;
 import lombok.Setter;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Locale;
 
 public enum Items {
 
@@ -40,7 +47,7 @@ public enum Items {
 
     Items(String name) {
         this.name = name;
-        if(ItemsListConfig.getInstance().getItemStack(name) != null) {
+        if (ItemsListConfig.getInstance().getItemStack(name) != null) {
             item = ItemsListConfig.getInstance().getItemStack(name);
             prepareItem();
             return;
@@ -83,7 +90,7 @@ public enum Items {
 
     private void prepareItem() {
         ItemMeta meta = item.getItemMeta();
-        meta.setItemName(getLocalizedName());
+        PDCTag.set(meta, getLocalizedName());
         item.setItemMeta(meta);
     }
 
@@ -92,13 +99,12 @@ public enum Items {
     }
 
     private static ItemStack unknown() {
-        ArrayList<String> lore = new ArrayList<>();
 
         ItemStack it = new ItemStack(Material.BEDROCK);
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName("Unknown");
-        meta.setLore(lore);
-        meta.setItemName("AlmPet;Unknown");
+        meta.displayName(Utils.toComponent("Unknown"));
+        meta.lore(new ArrayList<>());
+        PDCTag.set(meta, "AlmPet;Unknown");
 
         it.setItemMeta(meta);
 
@@ -108,10 +114,13 @@ public enum Items {
     private static ItemStack mount() {
         ItemStack it = new ItemStack(Material.SADDLE);
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName(Language.MOUNT_ITEM_NAME.getMessage());
+        meta.displayName(Language.MOUNT_ITEM_NAME.getComponent());
 
-        ArrayList<String> lore = new ArrayList<>(Arrays.asList(Language.MOUNT_ITEM_DESCRIPTION.getMessage().split("\n")));
-        meta.setLore(lore);
+        meta.lore(
+                Utils.toComponents(
+                        Language.MOUNT_ITEM_DESCRIPTION.getMessage()
+                )
+        );
 
         it.setItemMeta(meta);
         return it;
@@ -120,23 +129,27 @@ public enum Items {
     private static ItemStack rename() {
         ItemStack it = new ItemStack(Material.NAME_TAG);
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName(Language.RENAME_ITEM_NAME.getMessage());
+        meta.displayName(Language.RENAME_ITEM_NAME.getComponent());
 
-        ArrayList<String> lore = new ArrayList<>(Arrays.asList(Language.RENAME_ITEM_DESCRIPTION.getMessage().split("\n")));
-        meta.setLore(lore);
+        meta.lore(
+                Utils.toComponents(
+                        Language.RENAME_ITEM_DESCRIPTION.getMessage()
+                )
+        );
 
         it.setItemMeta(meta);
         return it;
     }
 
     private static ItemStack petmenu() {
-        ArrayList<String> lore = new ArrayList<>(Arrays.asList(Language.BACK_TO_PETMENU_ITEM_DESCRIPTION.getMessage().split("\n")));
-
         ItemStack it = new ItemStack(Material.PAPER);
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName(Language.BACK_TO_PETMENU_ITEM_NAME.getMessage());
-        meta.setLore(lore);
-        meta.setItemName("AlmPet;BackToPetMenu");
+        meta.displayName(Language.BACK_TO_PETMENU_ITEM_NAME.getComponent());
+        meta.lore(
+                Utils.toComponents(
+                        Language.BACK_TO_PETMENU_ITEM_DESCRIPTION.getMessage()
+        ));
+        PDCTag.set(meta, "AlmPet;BackToPetMenu");
 
         it.setItemMeta(meta);
 
@@ -144,13 +157,15 @@ public enum Items {
     }
 
     private static ItemStack mountmenu() {
-        ArrayList<String> lore = new ArrayList<>(Arrays.asList(Language.BACK_TO_PETMENU_ITEM_DESCRIPTION.getMessage().split("\n")));
-
         ItemStack it = new ItemStack(Material.PAPER);
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName(Language.BACK_TO_PETMENU_ITEM_NAME.getMessage());
-        meta.setLore(lore);
-        meta.setItemName("AlmPet;BackToMountMenu");
+        meta.displayName(Language.BACK_TO_PETMENU_ITEM_NAME.getComponent());
+        meta.lore(
+                Utils.toComponents(
+                        Language.BACK_TO_PETMENU_ITEM_DESCRIPTION.getMessage()
+                )
+        );
+        PDCTag.set(meta, "AlmPet;BackToMountMenu");
 
         it.setItemMeta(meta);
 
@@ -160,8 +175,8 @@ public enum Items {
     private static ItemStack inventory() {
         ItemStack it = new ItemStack(Material.CHEST);
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName(Language.INVENTORY_ITEM_NAME.getMessage());
-        meta.setItemName("AlmPet;Inventory");
+        meta.displayName(Language.INVENTORY_ITEM_NAME.getComponent());
+        PDCTag.set(meta, "AlmPet;Inventory");
 
         it.setItemMeta(meta);
 
@@ -171,8 +186,8 @@ public enum Items {
     private static ItemStack skins() {
         ItemStack it = new ItemStack(Material.MAGMA_CREAM);
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName(Language.SKINS_ITEM_NAME.getMessage());
-        meta.setItemName("AlmPet;Skins");
+        meta.displayName(Language.SKINS_ITEM_NAME.getComponent());
+        PDCTag.set(meta, "AlmPet;Skins");
 
         it.setItemMeta(meta);
 
@@ -182,8 +197,8 @@ public enum Items {
     private static ItemStack equipment() {
         ItemStack it = new ItemStack(Material.LEATHER_HORSE_ARMOR);
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName(Language.EQUIPMENT_ITEM_NAME.getMessage());
-        meta.setItemName("AlmPet;Inventory");
+        meta.displayName(Language.EQUIPMENT_ITEM_NAME.getComponent());
+        PDCTag.set(meta, "AlmPet;Inventory");
 
         it.setItemMeta(meta);
 
@@ -211,13 +226,13 @@ public enum Items {
     public static ItemStack page(int index, Player p) {
         ItemStack it = ItemsListConfig.getInstance().getItemStack("page_selector");
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName(Language.TURNPAGE_ITEM_NAME.getMessageFormatted(new FormatArg("%currentPage%", Integer.toString(index+1)),
-                                                                            new FormatArg("%maxPage%", Integer.toString((int)((double)Pet.getAvailablePets(p).size()/54 + 0.5)))));
+        meta.displayName(Language.TURNPAGE_ITEM_NAME.getComponentFormatted(
+                new FormatArg("%currentPage%", Integer.toString(index + 1)),
+                new FormatArg("%maxPage%", Integer.toString((int) ((double) Pet.getAvailablePets(p).size() / 54 + 0.5)))));
 
-        meta.setItemName("AlmPetPage;" + index);
+        PDCTag.set(meta, "AlmPetPage;" + index);
 
-        ArrayList<String> lore = new ArrayList<>(Arrays.asList(Language.TURNPAGE_ITEM_DESCRIPTION.getMessage().split("\n")));
-        meta.setLore(lore);
+        meta.lore(Utils.toComponents(Language.TURNPAGE_ITEM_DESCRIPTION.getMessage()));
 
         it.setItemMeta(meta);
         return it;
@@ -226,15 +241,18 @@ public enum Items {
     public static ItemStack page(Category category, int index) {
         ItemStack it = ItemsListConfig.getInstance().getItemStack("page_selector");
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName(Language.TURNPAGE_ITEM_NAME.getMessageFormatted(new FormatArg("%currentPage%", Integer.toString(index+1)),
+        meta.displayName(Language.TURNPAGE_ITEM_NAME.getComponentFormatted(new FormatArg("%currentPage%", Integer.toString(index + 1)),
                                                                             new FormatArg("%maxPage%", Integer.toString(category.getMaxPages()))));
-        meta.setItemName("MCPetsPage;" + category.getId() + ";" + index);
+        PDCTag.set(meta, "MCPetsPage;" + category.getId() + ";" + index);
 
-        ArrayList<String> lore = new ArrayList<>(Arrays.asList(Language.TURNPAGE_ITEM_DESCRIPTION.getMessageFormatted(
-                                                        new FormatArg("%currentPage%", Integer.toString(index)),
-                                                        new FormatArg("%maxPage%", Integer.toString(category.getMaxPages())))
-                                                        .split("\n")));
-        meta.setLore(lore);
+        meta.lore(
+                Utils.toComponents(
+                        Language.TURNPAGE_ITEM_DESCRIPTION.getMessageFormatted(
+                                new FormatArg("%currentPage%", Integer.toString(index)),
+                                new FormatArg("%maxPage%", Integer.toString(category.getMaxPages()))
+                        )
+                )
+        );
 
         it.setItemMeta(meta);
         return it;
@@ -246,22 +264,20 @@ public enum Items {
         ItemStack it = objectPet.getIcon().clone();
         ItemMeta meta = it.getItemMeta();
 
-        ArrayList<String> lore;
-        if (meta.getLore() == null)
-            lore = new ArrayList<>();
-        else
-            lore = new ArrayList<>(meta.getLore());
+        List<Component> lore;
+        if (!meta.hasLore()) lore = new ArrayList<>();
+        else lore = new ArrayList<>(meta.lore());
 
         if (pet.getCurrentName() != null && GlobalConfig.getInstance().isNameable()) {
-            lore.add(" ");
-            lore.add(Language.NICKNAME.getMessageFormatted(new FormatArg("%nickname%", pet.getCurrentName())));
-            lore.add(" ");
+            lore.add(Component.empty());
+            lore.add(Language.NICKNAME.getComponentFormatted(new FormatArg("%nickname%", pet.getCurrentName())));
+            lore.add(Component.empty());
         }
 
-        lore.addAll(Arrays.asList(Language.NICKNAME_ITEM_LORE.getMessage().split("\n")));
+        lore.addAll(Utils.toComponents(Language.NICKNAME_ITEM_LORE.getMessage()));
 
-        meta.setLore(lore);
-        meta.setItemName(null);
+        meta.lore(lore);
+        PDCTag.set(meta, null);
         it.setItemMeta(meta);
         return it;
     }
@@ -327,10 +343,10 @@ public enum Items {
     public static ItemStack deco(Material mat) {
         ItemStack it = new ItemStack(mat);
         ItemMeta meta = it.getItemMeta();
-        meta.setDisplayName("§0");
+        meta.displayName(Component.empty().color(NamedTextColor.BLACK));
 
-        ArrayList<String> lore = new ArrayList<>();
-        meta.setLore(lore);
+        List<Component> lore = new ArrayList<>();
+        meta.lore(lore);
 
         it.setItemMeta(meta);
 
@@ -338,34 +354,38 @@ public enum Items {
     }
 
     public static boolean isSignalStick(ItemStack it) {
-        return it != null &&
-                it.hasItemMeta() &&
-                it.getItemMeta().hasItemName() &&
-                it.getItemMeta().getItemName().contains(Pet.SIGNAL_STICK_TAG);
+        if (it == null || !it.hasItemMeta()) return false;
+
+        final String tag = PDCTag.get(it.getItemMeta());
+        return tag != null && tag.contains(Pet.SIGNAL_STICK_TAG);
     }
 
     public static ItemStack turnIntoSignalStick(ItemStack it, Pet pet) {
-        if (it == null || it.getType().isAir() || pet == null)
-            return it;
+        if (it == null || it.getType().isAir() || pet == null) return it;
+
         ItemMeta meta = it.getItemMeta();
-        meta.setItemName(buildSignalStickTag(pet));
+        PDCTag.set(meta, buildSignalStickTag(pet));
         it.setItemMeta(meta);
         return it;
     }
 
     public static String buildSignalStickTag(Pet pet) {
-        if (pet == null)
-            return null;
+        if (pet == null) return null;
+
         return Pet.SIGNAL_STICK_TAG + ";" + pet.getId();
     }
 
     public static String getPetTag(ItemStack it) {
-        if (it != null && it.hasItemMeta() && it.getItemMeta().hasItemName()) {
-            String[] split = it.getItemMeta().getItemName().split(";");
-            if (split.length == 2)
-                return split[1];
+        if (it != null && it.hasItemMeta()) {
+            final String tag = PDCTag.get(it.getItemMeta());
+            if (tag != null) {
+                final String[] split = tag.split(";");
+                if (split.length == 2)
+                    return split[1];
+            }
         }
 
         return null;
     }
+
 }

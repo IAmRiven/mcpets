@@ -1,15 +1,18 @@
 package fr.nocsy.mcpets.data.inventories;
 
-import fr.nocsy.mcpets.data.Category;
-import fr.nocsy.mcpets.data.CategoryType;
-import fr.nocsy.mcpets.data.Pet;
-import fr.nocsy.mcpets.data.config.Language;
+import java.util.List;
+
 import lombok.Getter;
+
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.ArrayList;
+import fr.nocsy.mcpets.data.Pet;
+import fr.nocsy.mcpets.utils.PDCTag;
+import fr.nocsy.mcpets.data.Category;
+import fr.nocsy.mcpets.data.CategoryType;
+import fr.nocsy.mcpets.data.config.Language;
 
 public class CategoriesMenu {
 
@@ -27,7 +30,7 @@ public class CategoriesMenu {
      * @param filterType the type to filter by (null for all categories)
      */
     public static void openFiltered(final Player p, final CategoryType filterType) {
-        final ArrayList<Category> categoriesToShow;
+        final List<Category> categoriesToShow;
 
         if (filterType == null) {
             categoriesToShow = Category.getCategories();
@@ -36,8 +39,9 @@ public class CategoriesMenu {
         }
 
         int invSize = categoriesToShow.size();
-        while (invSize == 0 || invSize % 9 != 0)
+        while (invSize == 0 || invSize % 9 != 0) {
             invSize++;
+        }
 
         // Choose the appropriate title based on the filter type
         String menuTitle = title; // Default to category menu title
@@ -60,18 +64,16 @@ public class CategoriesMenu {
     }
 
     public static Category findCategory(final ItemStack icon) {
-        if (icon == null) {
-            return null;
-        }
+        if (icon == null) return null;
 
-        if (icon.hasItemMeta()
-                && icon.getItemMeta().hasItemName()
-                && icon.getItemMeta().getItemName().contains("MCPetsCategory")) {
-
-            final String[] data = icon.getItemMeta().getItemName().split(";");
-            if (data.length == 2) {
-                final String catId = data[1];
-                return Category.getFromId(catId);
+        if (icon.hasItemMeta()) {
+            String tagVal = PDCTag.get(icon.getItemMeta());
+            if (tagVal != null && tagVal.contains("MCPetsCategory")) {
+                final String[] data = tagVal.split(";");
+                if (data.length == 2) {
+                    final String catId = data[1];
+                    return Category.getFromId(catId);
+                }
             }
         }
 
@@ -80,8 +82,7 @@ public class CategoriesMenu {
 
     public static void openSubCategory(final Player p, final ItemStack icon) {
         final Category category = findCategory(icon);
-        if (category != null) {
-            category.openInventory(p, 0);
-        }
+        if (category != null) category.openInventory(p, 0);
     }
+
 }
